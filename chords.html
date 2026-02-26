@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chord Analyzer (Chromebook Version)</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tonal.js for Music Theory -->
+    <script src="https://cdn.jsdelivr.net/npm/tonal/browser/tonal.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
+        <h1 class="text-3xl font-extrabold text-center mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+            Chord Analyzer
+        </h1>
+        
+        <!-- Input Form -->
+        <div class="space-y-4 mb-6">
+            <div>
+                <label class="text-xs uppercase font-bold text-slate-400 mb-1 block">Concert Chord</label>
+                <input type="text" id="chordInput" placeholder="e.g. Cmaj7, Bbmin6" 
+                    class="w-full bg-slate-900 text-white border border-slate-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-lg font-mono">
+            </div>
+            <div>
+                <label class="text-xs uppercase font-bold text-slate-400 mb-1 block">Your Instrument Key (Optional)</label>
+                <input type="text" id="transposeInput" placeholder="e.g. Bb, Eb" 
+                    class="w-full bg-slate-800 text-slate-300 border border-slate-600 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-500 text-center text-sm font-mono">
+            </div>
+            <button onclick="analyzeChord()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-lg transition-all shadow-lg shadow-blue-500/30">
+                Analyze & Transpose
+            </button>
+        </div>
+
+        <!-- Result Display -->
+        <div id="resultArea" class="hidden">
+            <div class="text-center mb-6 border-b border-slate-700 pb-6">
+                <span id="resSymbol" class="text-5xl font-bold text-white tracking-tight"></span>
+                <div id="resQuality" class="text-slate-400 text-sm mt-1 uppercase tracking-widest font-semibold"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-700/50 p-3 rounded-lg text-center">
+                    <div class="text-xs text-slate-400 uppercase font-bold mb-1">Root</div>
+                    <div id="resRoot" class="text-xl font-bold text-blue-300"></div>
+                </div>
+                <div class="bg-slate-700/50 p-3 rounded-lg text-center">
+                    <div class="text-xs text-slate-400 uppercase font-bold mb-1">Bass</div>
+                    <div id="resBass" class="text-xl font-bold text-emerald-300"></div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                <ul id="notesList" class="space-y-2"></ul>
+            </div>
+        </div>
+
+        <div id="errorArea" class="hidden bg-red-500/10 border border-red-500/50 text-red-200 p-4 rounded-lg text-center text-sm"></div>
+    </div>
+
+    <script>
+        function analyzeChord() {
+            const chordName = document.getElementById('chordInput').value.trim();
+            const transposeKey = document.getElementById('transposeInput').value.trim();
+            const resultArea = document.getElementById('resultArea');
+            const errorArea = document.getElementById('errorArea');
+            
+            try {
+                // 1. Get Concert Chord Data
+                let chord = Tonal.Chord.get(chordName);
+                if (chord.empty) throw new Error("Invalid chord symbol.");
+
+                let finalChordName = chord.symbol;
+                let notes = chord.notes;
+                let root = chord.tonic;
+                let bass = chord.bass || chord.tonic;
+
+                // 2. Instrument Transposition Logic
+                // If user types 'Bb', we find interval from Bb to C (Major 2nd UP)
+                if (transposeKey) {
+                    const instrument = Tonal.Note.get(transposeKey);
+                    if (instrument.empty) throw new Error("Invalid instrument key.");
+                    
+                    const concertC = "C";
+                    const transInterval = Tonal.Interval.distance(instrument.name, concertC);
+                    
+                    // Transpose every element
+                    finalChordName = Tonal.Chord.transpose(chordName, transInterval);
+                    const transChord = Tonal.Chord.get(finalChordName);
+                    notes = transChord.notes;
+                    root = transChord.tonic;
+                    bass = transChord.bass || transChord.tonic;
+                }
+
+                // 3. Update UI
+                errorArea.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+                
+                document.getElementById('resSymbol').innerText = finalChordName;
+                document.getElementById('resQuality').innerText = chord.type;
+                document.getElementById('resRoot').innerText = root;
+                document.getElementById('resBass').innerText = bass;
+
+                const list = document.getElementById('notesList');
+                list.innerHTML = "";
+                notes.forEach((note, index) => {
+                    const midi = Tonal.Note.get(note + "4").midi; // Default to octave 4
+                    const interval = chord.intervals[index] || "";
+                    
+                    list.innerHTML += `
+                        <li class="flex justify-between items-center text-sm bg-slate-800/80 px-3 py-2 rounded border border-slate-700/50">
+                            <span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-xs font-mono min-w-[3rem] text-center">${interval}</span>
+                            <span class="font-bold text-white text-lg">${note}</span>
+                            <span class="text-slate-500 font-mono text-xs">${midi || '--'}</span>
+                        </li>`;
+                });
+
+            } catch (e) {
+                resultArea.classList.add('hidden');
+                errorArea.classList.remove('hidden');
+                errorArea.innerText = e.message;
+            }
+        }
+    </script>
+</body>
+</html>
