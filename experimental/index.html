@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soniq | Studio Toolkit</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tonal/browser/tonal.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --glass: rgba(15, 23, 42, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 100%);
+            background-attachment: fixed;
+            color: #f1f5f9;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .input-glow:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: fadeIn 0.4s ease forwards; }
+
+        .master-grid { align-items: start; }
+    </style>
+</head>
+
+<body class="pb-20">
+
+    <!-- HEADER SECTION -->
+    <header class="py-12 text-center relative overflow-hidden">
+        <h1 class="text-5xl font-extrabold tracking-tighter text-white mb-2">SONIQ</h1>
+        <p class="text-indigo-400 font-bold tracking-[0.4em] text-[10px] uppercase">Studio Theory Toolkit</p>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 master-grid">
+        
+        <!-- LEFT COLUMN: INPUTS -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- SCALE ANALYZER -->
+            <section class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-1.5 h-5 bg-indigo-500 rounded-full"></div>
+                    <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Scale Analyzer</h2>
+                </div>
+                <div class="space-y-4">
+                    <input id="scaleInput" placeholder="e.g. Eb Lydian"
+                        class="input-glow w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 px-4 mono text-indigo-300">
+                    <input id="transposeInput" placeholder="Transpose for instrument (Bb, Eb...)"
+                        class="input-glow w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 mono text-xs text-slate-500">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="analyzeScale()" class="btn-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Analyze</button>
+                        <button onclick="randomScale()" class="bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-colors">Random</button>
+                    </div>
+                </div>
+                <div id="scaleErrorArea" class="hidden mt-4 text-[10px] text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20"></div>
+            </section>
+
+            <!-- CHORD ANALYZER -->
+            <section class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-1.5 h-5 bg-purple-500 rounded-full"></div>
+                    <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Chord Analyzer</h2>
+                </div>
+                <div class="space-y-4">
+                    <input id="chordInput" placeholder="Cmaj7#11"
+                        class="input-glow w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 px-4 mono text-purple-300">
+                    <input id="chordTransposeInput" placeholder="Transpose for instrument (Bb, Eb...)"
+                        class="input-glow w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 mono text-xs text-slate-500">
+                    <button onclick="analyzeChord()" class="btn-primary w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Identify Structure</button>
+                </div>
+                <div id="chordErrorArea" class="hidden mt-4 text-[10px] text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20"></div>
+            </section>
+
+            <!-- KEY DETECTOR -->
+            <section class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
+                    <h2 class="text-sm font-bold uppercase tracking-widest text-slate-400">Key Detector</h2>
+                </div>
+                <div class="space-y-4">
+                    <input id="melodyInput" placeholder="E F# G A B..."
+                        class="input-glow w-full bg-slate-950/50 border border-slate-800 rounded-xl py-3 px-4 mono text-emerald-300">
+                    <button onclick="analyzeMelody()" class="btn-primary w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Detect Key</button>
+                </div>
+                <div id="melodyErrorArea" class="hidden mt-4 text-[10px] text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20"></div>
+            </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN: MASTER DISPLAY (RESULT) -->
+        <div class="lg:col-span-7">
+            <div id="masterDisplay" class="min-h-full">
+                <!-- Default placeholder -->
+                <div id="placeholder" class="border-2 border-dashed border-slate-800 rounded-[2rem] min-h-[400px] flex items-center justify-center text-center">
+                    <p class="text-slate-600 mono text-xs">Run an analysis to generate studio view</p>
+                </div>
+                <div id="resultMount"></div>
+            </div>
+        </div>
+    </main>
+
+<script>
+const TONICS = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+
+function exportCard(button, style) {
+    const card = button.closest(".result-card");
+    const exportTarget = card.querySelector(`.export-card-${style}`);
+    if (!exportTarget) return;
+    
+    exportTarget.classList.remove("hidden");
+    html2canvas(exportTarget, { backgroundColor: null, scale: 2 }).then(canvas => {
+        exportTarget.classList.add("hidden");
+        const link = document.createElement("a");
+        link.download = `soniq-${style}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+}
+
+function analyzeScale(scaleNameOverride = null) {
+    const scaleName = scaleNameOverride || document.getElementById('scaleInput').value.trim();
+    const transposeKey = document.getElementById('transposeInput').value.trim();
+    const errorArea = document.getElementById('scaleErrorArea');
+    const mount = document.getElementById('resultMount');
+    document.getElementById('placeholder').style.display = 'none';
+
+    try {
+        let scale = Tonal.Scale.get(scaleName);
+        if (scale.empty) throw new Error("Could not identify that scale.");
+
+        let notes = scale.notes;
+        let degrees = scale.intervals;
+        let finalScaleName = scale.name;
+        let concertName = scale.name;
+
+        if (transposeKey) {
+            const interval = Tonal.Interval.distance(Tonal.Note.get(transposeKey).name, "C");
+            notes = notes.map(n => Tonal.Note.transpose(n, interval));
+            finalScaleName = Tonal.Note.transpose(scale.tonic, interval) + " " + scale.type;
+        }
+
+        const accidentals = [...new Set(notes.filter(n => n.includes("#") || n.includes("b")))];
+
+        const chords = notes.map((n, i) => {
+            const triad = [n, notes[(i+2)%notes.length], notes[(i+4)%notes.length]];
+            return { degree: ["I","ii","iii","IV","V","vi","vii°"][i] || (i+1), name: Tonal.Chord.detect(triad)[0] || "---", notes: triad };
+        });
+
+        errorArea.classList.add('hidden');
+        mount.innerHTML = `
+            <div class="result-card glass-card p-8 rounded-[2rem] animate-in relative border-indigo-500/20 bg-indigo-500/5">
+                <div class="flex flex-wrap justify-between items-start gap-4 mb-8">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Scale Analysis</span>
+                        <h3 class="text-4xl font-black text-white">${finalScaleName}</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportCard(this, 'key')" class="text-[10px] bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 px-4 py-2 rounded-lg mono uppercase tracking-wider transition-colors">Key Sig</button>
+                        <button onclick="exportCard(this, 'dark')" class="text-[10px] bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg mono uppercase tracking-wider transition-colors">Export PNG</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 sm:grid-cols-7 gap-3 mb-8">
+                    ${notes.map((n, i) => `
+                        <div class="bg-black/40 p-3 rounded-2xl border border-white/5 text-center">
+                            <div class="mono text-[10px] text-slate-500 mb-1">${degrees[i]}</div>
+                            <div class="text-xl font-bold text-white">${n}</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="space-y-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Diatonic Triads</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${chords.map(ch => `
+                            <div class="flex justify-between items-center bg-slate-950/40 px-4 py-3 rounded-xl border border-white/5">
+                                <span class="mono text-xs text-indigo-400 font-bold">${ch.degree}</span>
+                                <span class="font-bold text-slate-200">${ch.name}</span>
+                                <span class="mono text-[10px] text-slate-500">${ch.notes.join(" ")}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- HIDDEN EXPORT CARDS -->
+                <div class="export-card-dark hidden p-12 rounded-[40px] bg-slate-950 text-white w-[700px] border border-slate-800">
+                     <div class="text-indigo-500 font-bold mono text-xs uppercase mb-2 tracking-[0.3em]">Scale Analysis</div>
+                     <div class="text-6xl font-black mb-10">${finalScaleName}</div>
+                     <div class="grid grid-cols-7 gap-4 mb-4">${notes.map((n,i) => `<div class="text-center bg-white/5 p-4 rounded-2xl"><div class="text-xs opacity-50 mb-1">${degrees[i]}</div><div class="text-2xl font-bold">${n}</div></div>`).join('')}</div>
+                     <div class="mt-8 text-slate-600 mono text-xs uppercase">Concert Pitch: ${concertName}</div>
+                </div>
+
+                <div class="export-card-key hidden p-12 rounded-[40px] bg-slate-950 text-white w-[500px] border border-slate-800 text-center">
+                     <div class="text-indigo-500 font-bold mono text-xs uppercase mb-6 tracking-[0.4em]">${finalScaleName}</div>
+                     <div class="text-xs uppercase text-slate-500 mb-4 tracking-widest">Key Signature</div>
+                     <div class="text-6xl font-mono tracking-widest text-indigo-100 mb-4">
+                        ${accidentals.length ? accidentals.join(" ") : "♮"}
+                     </div>
+                     <div class="text-[10px] text-slate-600 mono uppercase mt-6 tracking-widest">Soniq Theory Studio</div>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        errorArea.classList.remove('hidden');
+        errorArea.innerText = e.message;
+    }
+}
+
+function analyzeChord() {
+    const input = document.getElementById('chordInput').value.trim();
+    const transposeKey = document.getElementById('chordTransposeInput').value.trim();
+    const errorArea = document.getElementById('chordErrorArea');
+    const mount = document.getElementById('resultMount');
+    document.getElementById('placeholder').style.display = 'none';
+
+    try {
+        let chord = Tonal.Chord.get(input);
+        if (chord.empty) throw new Error("Invalid chord symbol.");
+
+        let notes = chord.notes;
+        let title = chord.symbol;
+
+        if (transposeKey) {
+            const interval = Tonal.Interval.distance(Tonal.Note.get(transposeKey).name, "C");
+            title = Tonal.Chord.transpose(input, interval);
+            notes = Tonal.Chord.get(title).notes;
+        }
+
+        errorArea.classList.add('hidden');
+        mount.innerHTML = `
+            <div class="result-card glass-card p-8 rounded-[2rem] animate-in border-purple-500/20 bg-purple-500/5">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Chord Structure</span>
+                        <h3 class="text-4xl font-black text-white">${title}</h3>
+                        <p class="text-slate-500 text-[10px] uppercase mono mt-2 tracking-widest font-semibold">${chord.type}</p>
+                    </div>
+                    <button onclick="exportCard(this, 'dark')" class="text-[10px] bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg mono uppercase transition-colors">Export PNG</button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    ${notes.map((n, i) => `
+                        <div class="flex justify-between items-center bg-black/40 p-4 rounded-2xl border border-white/5">
+                            <span class="text-2xl font-black text-white">${n}</span>
+                            <span class="mono text-xs text-purple-400 font-bold">${chord.intervals[i]}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="export-card-dark hidden p-12 rounded-[40px] bg-slate-950 text-white w-[600px] border border-slate-800">
+                     <div class="text-purple-500 font-bold mono text-xs uppercase mb-2 tracking-[0.3em]">Chord Analysis</div>
+                     <div class="text-6xl font-black mb-4">${title}</div>
+                     <div class="text-xl opacity-50 mb-10 tracking-widest uppercase text-slate-400">${chord.type}</div>
+                     <div class="grid grid-cols-2 gap-4">${notes.map((n,i) => `<div class="flex justify-between items-center bg-white/5 p-6 rounded-2xl"><span class="text-4xl font-black">${n}</span><span class="mono opacity-50 font-bold">${chord.intervals[i]}</span></div>`).join('')}</div>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        errorArea.classList.remove('hidden');
+        errorArea.innerText = e.message;
+    }
+}
+
+function analyzeMelody() {
+    const input = document.getElementById('melodyInput').value.trim();
+    const errorArea = document.getElementById('melodyErrorArea');
+    const mount = document.getElementById('resultMount');
+    document.getElementById('placeholder').style.display = 'none';
+
+    try {
+        if (!input) throw new Error("Enter notes.");
+        const notes = input.split(/[\s,]+/).map(n => Tonal.Note.get(n).pc).filter(Boolean);
+        
+        const results = [];
+        TONICS.forEach(t => {
+            ["major","minor"].forEach(m => {
+                const scale = Tonal.Scale.get(`${t} ${m}`);
+                let score = 0;
+                notes.forEach(n => score += scale.notes.includes(n) ? 2 : -1);
+                results.push({ name: `${t} ${m}`, score });
+            });
+        });
+        const best = results.sort((a,b) => b.score - a.score)[0];
+        const scale = Tonal.Scale.get(best.name);
+
+        errorArea.classList.add('hidden');
+        mount.innerHTML = `
+            <div class="glass-card p-8 rounded-[2rem] animate-in border-emerald-500/20 bg-emerald-500/5">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Key Identification</span>
+                        <h3 class="text-4xl font-black text-white">${best.name}</h3>
+                        <p class="text-slate-500 text-[10px] uppercase mono mt-2 italic tracking-widest">Confidence Score: ${best.score}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    ${notes.map(n => {
+                        const inKey = scale.notes.includes(n);
+                        return `
+                        <div class="bg-black/40 border ${inKey ? 'border-emerald-500/20' : 'border-red-500/20'} p-4 rounded-2xl text-center">
+                            <div class="text-xl font-bold ${inKey ? 'text-white' : 'text-red-400'}">${n}</div>
+                            <div class="text-[9px] uppercase mono text-slate-500 mt-1 font-bold">${inKey ? 'In Key' : 'Out'}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        errorArea.classList.remove('hidden');
+        errorArea.innerText = e.message;
+    }
+}
+
+function randomScale() {
+    const t = TONICS[Math.floor(Math.random()*TONICS.length)];
+    const m = ["major","minor","dorian","lydian","mixolydian"][Math.floor(Math.random()*5)];
+    const name = `${t} ${m}`;
+    document.getElementById('scaleInput').value = name;
+    analyzeScale(name);
+}
+</script>
+
+</body>
+</html>
